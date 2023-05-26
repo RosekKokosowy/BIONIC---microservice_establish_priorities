@@ -21,8 +21,8 @@ public class Network {
     private int counter_Fuels[];
     private int counter_Gearbox[];
 
-    private double HEAT = 0.2;
-    private double ACTIVATION_BOUNDARY = 0.2;
+    private double HEAT = 0.1;
+    private double ACTIVATION_BOUNDARY = 0.1;
 
     public ParametersWeight output;
 
@@ -38,13 +38,13 @@ public class Network {
 
     public void Train( List< CarParameters> cars)
     {
-        Predict();
-
-
         for( CarParameters c : cars)
         {
             ParametersWeight w = DrawNormals( c);
+            Predict();
             Step( w);
+            DebugDisp();
+            m_Iteration++;
         }
 
         output = m_ArbitraryWeights;
@@ -70,48 +70,82 @@ public class Network {
 
                 "automatic");
 
+        m_ArbitraryWeights = DrawNormals(m_ArbitraryModel);
+
         m_Iteration = 0;
     }
 
     private void Step( ParametersWeight weights)
     {
-        if( Activation(m_ArbitraryWeights.getYearOfManufacture(), weights.getYearOfManufacture()))
-        {
-            m_ArbitraryWeights.setYearOfManufacture(m_PreviousArbitraryWeights.getYearOfManufacture() + (m_PreviousArbitraryWeights.getYearOfManufacture() - weights.getYearOfManufacture()) * HEAT);
+        double res;
+        if( Activation(m_ArbitraryWeights.getYearOfManufacture(), weights.getYearOfManufacture())) {
+            res = m_PreviousArbitraryWeights.getYearOfManufacture() + (weights.getYearOfManufacture() - m_PreviousArbitraryWeights.getYearOfManufacture()) * HEAT;
+            if( res > 1)    res = 1;
+            if( res < 0)    res = 0;
+            m_ArbitraryWeights.setYearOfManufacture(res);
         }
 
         if( Activation(m_ArbitraryWeights.getMileage(), weights.getMileage()))
         {
-            m_ArbitraryWeights.setMileage(m_PreviousArbitraryWeights.getMileage()  + (m_PreviousArbitraryWeights.getMileage() - weights.getMileage()) * HEAT);
+            res = m_PreviousArbitraryWeights.getMileage()  + (weights.getMileage() - m_PreviousArbitraryWeights.getMileage()) * HEAT;
+            if( res > 1)    res = 1;
+            if( res < 0)    res = 0;
+            m_ArbitraryWeights.setMileage(res);
         }
 
         if( Activation(m_ArbitraryWeights.getPrice(), weights.getPrice()))
         {
-            m_ArbitraryWeights.setPrice(m_PreviousArbitraryWeights.getPrice()  + (m_PreviousArbitraryWeights.getPrice() - weights.getPrice()) * HEAT);
+            res = m_PreviousArbitraryWeights.getPrice()  + (weights.getPrice() - m_PreviousArbitraryWeights.getPrice()) * HEAT;
+            if( res > 1)    res = 1;
+            if( res < 0)    res = 0;
+            m_ArbitraryWeights.setPrice(res);
         }
 
         if( Activation(m_ArbitraryWeights.getHorsePower(), weights.getHorsePower()))
         {
-            m_ArbitraryWeights.setHorsePower(m_PreviousArbitraryWeights.getHorsePower() + (m_PreviousArbitraryWeights.getHorsePower() - weights.getHorsePower()) * HEAT);
+            res = m_PreviousArbitraryWeights.getHorsePower() + (weights.getHorsePower() - m_PreviousArbitraryWeights.getHorsePower()) * HEAT;
+            if( res > 1)    res = 1;
+            if( res < 0)    res = 0;
+            m_ArbitraryWeights.setHorsePower(res);
         }
+    }
+
+    private double GetRandValueSafe(double internal)
+    {
+        Random rand = new Random();
+        return internal > 0 ? rand.nextDouble(internal) : rand.nextDouble(HEAT);
     }
 
     private void Predict()
     {
-        Random rand = new Random();
+
+        double res;
+        double value;
         m_PreviousArbitraryWeights = m_ArbitraryWeights;
 
-        double value = rand.nextDouble(m_ArbitraryWeights.getYearOfManufacture());
-        m_ArbitraryWeights.setYearOfManufacture(m_ArbitraryWeights.getYearOfManufacture() + (value - m_ArbitraryWeights.getYearOfManufacture()/2) * HEAT);
+        value = GetRandValueSafe( m_ArbitraryWeights.getYearOfManufacture());
+        res = m_ArbitraryWeights.getYearOfManufacture() + (value - GetRandValueSafe(value)) * HEAT;
+        if( res < 0)    res = 0;
+        if( res > 1)    res = 1;
+        m_ArbitraryWeights.setYearOfManufacture(res);
 
-        value = rand.nextDouble(m_ArbitraryWeights.getMileage());
-        m_ArbitraryWeights.setMileage(m_ArbitraryWeights.getMileage() + (value - m_ArbitraryWeights.getMileage()/2) * HEAT);
+        value = GetRandValueSafe( m_ArbitraryWeights.getMileage());
+        res = m_ArbitraryWeights.getMileage() + (value - GetRandValueSafe(value)) * HEAT;
+        if( res < 0)    res = 0;
+        if( res > 1)    res = 1;
+        m_ArbitraryWeights.setMileage(res);
 
-        value = rand.nextDouble(m_ArbitraryWeights.getPrice());
-        m_ArbitraryWeights.setPrice(m_ArbitraryWeights.getPrice() + (value - m_ArbitraryWeights.getPrice()/2) * HEAT);
+        value = GetRandValueSafe(m_ArbitraryWeights.getPrice());
+        res = m_ArbitraryWeights.getPrice() + (value - GetRandValueSafe(value)) * HEAT;
+        if( res < 0)    res = 0;
+        if( res > 1)    res = 1;
+        m_ArbitraryWeights.setPrice(res);
 
-        value = rand.nextDouble(m_ArbitraryWeights.getHorsePower());
-        m_ArbitraryWeights.setHorsePower(m_ArbitraryWeights.getHorsePower() + (value - m_ArbitraryWeights.getHorsePower()/2) * HEAT);
+        value = GetRandValueSafe(m_ArbitraryWeights.getHorsePower());
+        res = m_ArbitraryWeights.getHorsePower() + (value - GetRandValueSafe(value)) * HEAT;
+        if( res < 0)    res = 0;
+        if( res > 1)    res = 1;
+        m_ArbitraryWeights.setHorsePower(res);
     }
 
     private void Normalize()
@@ -162,5 +196,15 @@ public class Network {
     private boolean Activation(double a, double b)
     {
         return abs(a - b) >= ACTIVATION_BOUNDARY;
+    }
+
+    private void DebugDisp()
+    {
+        System.out.println("Iteration: " + m_Iteration +
+                "\nYear of manufacture: " + m_ArbitraryWeights.getYearOfManufacture() +
+                "\nMileage: " + m_ArbitraryWeights.getMileage() +
+                "\nPrice: " + m_ArbitraryWeights.getPrice() +
+                "\nHorsePower: " + m_ArbitraryWeights.getHorsePower()
+        );
     }
 }
