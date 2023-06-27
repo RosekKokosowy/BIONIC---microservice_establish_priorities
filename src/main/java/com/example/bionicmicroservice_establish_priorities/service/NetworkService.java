@@ -6,6 +6,7 @@ import com.example.bionicmicroservice_establish_priorities.data.Car;
 import org.springframework.stereotype.Service;
 
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -19,6 +20,9 @@ public class NetworkService {
     private ParametersWeight m_PreviousArbitraryWeights;
 
     private ParametersWeight m_CurrentCarToParams;
+
+    private ArrayList< Double> m_Acuraccy;
+    private ArrayList< Double> m_ActualAcuraccy;
 
     private double min[] = new double[4];
     private double max[] = new double[4];
@@ -45,10 +49,20 @@ public class NetworkService {
         {
             ParametersWeight w = DrawNormals( c);
             Predict();
-            Step( w);
+            m_Acuraccy.add( Step( w));
+            m_ActualAcuraccy.add( JudgementAcuraccy( m_ArbitraryWeights, w));
             DebugDisp();
             m_Iteration++;
         }
+
+        System.out.println("Model Prediction Acuraccy:");
+        for( Double d : m_Acuraccy)
+            System.out.println( d);
+
+        System.out.println("Model Actual Acuraccy:");
+        for( Double d : m_ActualAcuraccy)
+            System.out.println( d);
+
 
         output = m_ArbitraryWeights;
     }
@@ -76,11 +90,25 @@ public class NetworkService {
 
         m_ArbitraryWeights = DrawNormals(m_ArbitraryModel);
 
+        m_Acuraccy = new ArrayList<>();
+        m_ActualAcuraccy = new ArrayList<>();
+
         m_Iteration = 0;
     }
 
-    private void Step(ParametersWeight weights)
+    private double JudgementAcuraccy( ParametersWeight model, ParametersWeight input)
     {
+        double res = 0;
+        res += abs( model.getHorsePower() - input.getHorsePower());
+        res += abs( model.getMileage() - input.getMileage());
+        res += abs( model.getPrice() - input.getPrice());
+        res += abs( model.getYearOfManufacture() - input.getYearOfManufacture());
+        return res;
+    }
+
+    private double Step( ParametersWeight weights)
+    {
+        double ret = JudgementAcuraccy( m_ArbitraryWeights, weights);
         double res;
         if( Activation(m_ArbitraryWeights.getYearOfManufacture(), weights.getYearOfManufacture())) {
             res = m_PreviousArbitraryWeights.getYearOfManufacture() + (weights.getYearOfManufacture() - m_PreviousArbitraryWeights.getYearOfManufacture()) * HEAT;
@@ -112,6 +140,7 @@ public class NetworkService {
             if( res < 0)    res = 0;
             m_ArbitraryWeights.setHorsePower(res);
         }
+        return ret;
     }
 
     private double GetRandValueSafe(double internal)
